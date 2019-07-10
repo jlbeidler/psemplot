@@ -6,16 +6,14 @@ class PsempData(ncf.Dataset):
     """
     def __init__(self, infile_name):
         ncf.Dataset.__init__(self, infile_name)
-        self.var_dict = self.variables
         self._get_attr()
-        self.varlist = list(self.var_dict.keys())
 
     def __str__(self):
         return self.filename
 
     def var(self, var_name):
-        if var_name in self.varlist:
-            arr = self.var_dict[var_name]
+        if var_name in list(self.variables.keys()):
+            arr = self.variables[var_name]
         else:
             raise ValueError('The variable %s does not exist in the file %s.' %(var_name, self.filename))
         return arr[:]
