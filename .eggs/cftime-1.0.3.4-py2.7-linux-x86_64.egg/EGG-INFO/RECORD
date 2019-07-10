@@ -1,0 +1,6 @@
+cftime/__init__.py,sha256=bPXeRr0bttf4G8UK28LSP4nm_S1qlB-KwzD5sGs0UTw,533
+cftime/_cftime.so,sha256=g0Ul0Ls2CrINE29KfovUhxkImjq1JxrvW1QP3XTHC_M,706784
+cftime-1.0.3.4.dist-info/WHEEL,sha256=M5Ujap42zjfAFnpJOoFU72TFHuBKh-JF0Rqu5vZhkVE,110
+cftime-1.0.3.4.dist-info/top_level.txt,sha256=0_PQDtWlaAdyF2-0rK92qkVomI0z4gHS5CD3RmiNqJc,7
+cftime-1.0.3.4.dist-info/METADATA,sha256=9qPTHz_zVDWpreE9bkCbw4Rm0PKRFGMYWuacSTWg1Y8,3320
+cftime-1.0.3.4.dist-info/RECORD,,

@@ -5,7 +5,7 @@ class PsempData(ncf.Dataset):
     Instance of an input file.
     """
     def __init__(self, infile_name):
-        ncf.Dataset.__init__(self, fname)
+        ncf.Dataset.__init__(self, infile_name)
         self.var_dict = self.variables
         self._get_attr()
         self.varlist = list(self.var_dict.keys())
