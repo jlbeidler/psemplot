@@ -1,24 +1,27 @@
 import netCDF4 as ncf
 
-class PsempData(ncf.Dataset):
+class PsempData:
     """
     Instance of an input file.
     """
     def __init__(self, infile_name):
-        ncf.Dataset.__init__(self, infile_name)
-        self._get_attr()
+        self.src = ncf.Dataset(infile_name)
+        self.get_attr()
 
     def __str__(self):
-        return self.filename
+        return self.src.filename
 
     def var(self, var_name):
         if var_name in list(self.variables.keys()):
-            arr = self.variables[var_name]
+            arr = self.src.variables[var_name]
         else:
-            raise ValueError('The variable %s does not exist in the file %s.' %(var_name, self.filename))
+            raise ValueError('The variable %s does not exist in the file %s.' %(var_name, self.src.filename))
         return arr[:]
 
-    def _get_attr(self):
+    def close(self):
+        self.src.close()
+
+    def get_attr(self):
         '''
         set the psempdata API attributes to the I/O API attribute values
         '''
@@ -27,9 +30,9 @@ class PsempData(ncf.Dataset):
                 'ycell': 'YCELL', 'sdate': 'SDATE', 'tstep': 'TSTEP', 'gdtyp': 'GDTYP', 'pgam': 'P_GAM'}
         for out_attr, in_attr in attr_dict.items():
             try:
-                val = getattr(self, in_attr)
+                val = self.src.in_attr
             except AttributeError:
-                raise AttributeError('Attribute %s not found in %s' %(in_attr, self.filename))
+                raise AttributeError('Attribute %s not found in %s' %(in_attr, self.src.filename))
             else:
                 setattr(self, out_attr, val)
 

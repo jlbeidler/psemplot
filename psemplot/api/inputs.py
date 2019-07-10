@@ -29,7 +29,7 @@ def load_input(module_name, infile_name):
     dt_attr = {'sdate': int, 'tstep': int, 'xorig': float, 'yorig': float, 'palp': float, 'pbet': float,
             'xcent': float, 'ycent': float, 'cols': int, 'rows': int, 'xcell': int, 'ycell': int}
     # Validate parameter types
-    for att,chk in dt_attr.items():
+    for att, chk in dt_attr.items():
         val = getattr(data_obj, att)
         if val is None:
             raise AttributeError('Attribute %s undefined' %att)
