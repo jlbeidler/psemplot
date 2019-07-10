@@ -10,9 +10,6 @@ import numpy.ma as ma
 from matplotlib.collections import LineCollection
 from .colors import diff_cmap, data_cmap, VLimit
 
-county_shape = 'shapefiles/UScounties'  # County shapefile without .shp
-world_shape = 'shapefiles/countries'
-
 class GridPlot(object):
 
     def __init__(self, in_file, shape_file, shape_att):
@@ -28,19 +25,11 @@ class GridPlot(object):
         '''
         Read the shapefile onto the map and drop the lines
         '''
-        if proj_name == 'lcc':
-            if not shape_file:
-                shape_file = county_shape
-                shape_att = 'counties'
-        if proj_name == 'polar':
-            if not shape_file:
-                shape_file = world_shape
-                shape_att = 'NAME'
-        map_shape = self.m.readshapefile(shape_file, shape_att, drawbounds=True, linewidth=0.3)           
-#            self.m.drawcountries()
-#            self.m.drawcoastlines()
-#            self.m.drawmeridians(np.arange(0,360,4), labels=[0,0,0,1])
-#            self.m.drawparallels(np.arange(-90,90,4), labels=[1,0,0,0])        
+        if shape_file:
+            map_shape = self.m.readshapefile(shape_file, shape_att, drawbounds=True, linewidth=0.3)           
+        else:
+            self.m.drawcountries()
+            self.m.drawcoastlines()
 
     def format_tick(self, tick, use_absolute=False):
         '''
@@ -49,7 +38,7 @@ class GridPlot(object):
         if use_absolute:
             f_val = abs(tick)
         else:
-            f_val = abs(self.ticks[int(len(self.ticks)/2)])
+            f_val = abs(self.ticks[-1])
             if f_val == 0:
                 f_val = abs(self.ticks[int(len(self.ticks)/2)])
         if f_val >= 100000 or f_val < 0.02:
@@ -108,7 +97,7 @@ class GridPlot(object):
         else:
              params = {'legend.fontsize': 12}
         matplotlib.rcParams.update(params)
-        p.title(options.title, fontweight='bold')
+        p.title(options.title.replace('@S',options.formula), fontweight='bold')
         if options.subtitle:
             subtitle = options.subtitle
         else:
