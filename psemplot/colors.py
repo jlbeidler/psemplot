@@ -13,13 +13,13 @@ p.register_cmap(name='viridis_r', cmap=cmaps.viridis_r)
 p.register_cmap(name='magma_r', cmap=cmaps.magma_r)
 p.register_cmap(name='plasma_r', cmap=cmaps.plasma_r)
 
-class VLimit(object):
+class vlimit(object):
     """
     Calculate data plot limits
     """
     def __init__(self, x, data):
         self.per = ''
-        self._get_lim(x, data)
+        self.get_lim(x, data)
         self.data_min = data.min()
         self.data_max = data.max()
 
@@ -29,7 +29,7 @@ class VLimit(object):
     def __str__(self):
         return str(self.x)
 
-    def _get_lim(self, x, data):
+    def get_lim(self, x, data):
         """
         Return a numerical value based on a numerical limit
         or on a percentile 

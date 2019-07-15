@@ -8,7 +8,7 @@ import pylab as p
 import numpy as np
 import numpy.ma as ma
 from matplotlib.collections import LineCollection
-from .colors import diff_cmap, data_cmap, VLimit
+from .colors import diff_cmap, data_cmap, vlimit
 
 class GridPlot(object):
 
@@ -135,9 +135,9 @@ class GridPlot(object):
         self.raw_max = data.max()
         if options.mask_less:
             data = ma.masked_less(data, float(options.mask_less))
-        vmax_lim = VLimit(options.vmax, data)
-        vmin_lim = VLimit(options.vmin, data)
-        self.neutral_lim = VLimit(options.neutral, data)
+        vmax_lim = vlimit(options.vmax, data)
+        vmin_lim = vlimit(options.vmin, data)
+        self.neutral_lim = vlimit(options.neutral, data)
         if vmax_lim.x < 0:
             print('WARNING: Vmax is negative.  May result in plotting error.')
             # Deal with a scale where all data values are less than zero
@@ -146,14 +146,14 @@ class GridPlot(object):
                 if vmax_lim.per:
                     iv_max = '%s%%' %(100 - vmax_lim.nper)
                     print('NOTE: Resetting vmin to %s' %iv_max)
-                    vmin_lim = VLimit(iv_max, data)
+                    vmin_lim = vlimit(iv_max, data)
                 else:
                     print('NOTE: Resetting vmin to %s' %(vmax_lim.x * -1))
-                    vmin_lim = VLimit(str(vmax_lim.x * -1), data)
+                    vmin_lim = vlimit(str(vmax_lim.x * -1), data)
                 neutral_per = '%s%%' %(100 - self.neutral_lim.nper) 
-                self.neutral_lim = VLimit(neutral_per, data)
+                self.neutral_lim = vlimit(neutral_per, data)
         self.ticks = []
-        if (((np.amin(data) < 0 and np.amax(data) > 0) and (vmin_lim.x < 0 and vmax_lim.x > 0)) or \
+        if (((np.amin(data) < 0 and np.amax(data) > 0) and (vmin_lim.x <= 0 and vmax_lim.x >= 0)) or \
             options.force_diff):
             # Set up a difference color map when the absolute max and min sit on opposite
             # sides of zero
@@ -163,17 +163,22 @@ class GridPlot(object):
             if vmax_lim.per:
                 iv_max = '%s%%' %(100 - vmax_lim.nper + 1e-16)  # Put in some arbitrarily small value so that 0 isn't returned
                 print('NOTE: Resetting vmin_lim to %s to balance scale' %iv_max)
-                vmin_lim = VLimit(iv_max, data)
+                vmin_lim = vlimit(iv_max, data)
+            # Fix scale limits of very sparse difference data 
+            if (vmin_lim.x == vmax_lim.x) and vmax_lim.per:
+                print('NOTE: Very sparse data, resetting scale max to percentage of data max')
+                vmax_lim.x = vmax_lim.nper/100 * vmax_lim.data_max
+                print(vmax_lim.x)
             if not options.no_auto:
                 # Check if the absolute value of the min is greater than the max
                 # If it is, select the max to be the absolute value of the min
                 if abs(vmin_lim.x) > vmax_lim.x and vmin_lim.x < 0 and not options.no_auto:
                     print('NOTE: Setting vmax_lim to absolute value of vmin_lim')
-                    vmax_lim = VLimit(str(abs(vmin_lim.x)), data)
+                    vmax_lim = vlimit(str(abs(vmin_lim.x)), data)
                 else:
                 # Otherwise set the min to be the negative of the max
                     print('NOTE: Setting vmin_lim to negative of vmax_lim')
-                    vmin_lim = VLimit(str((vmax_lim.x * -1)), data)
+                    vmin_lim = vlimit(str((vmax_lim.x * -1)), data)
             self.cmap, self.ticks = diff_cmap(vmin_lim.x, vmax_lim.x, self.ncolor, self.neutral_lim, options)
         else:
             # Use standard map
