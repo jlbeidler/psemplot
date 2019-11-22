@@ -13,7 +13,7 @@ p.register_cmap(name='viridis_r', cmap=cmaps.viridis_r)
 p.register_cmap(name='magma_r', cmap=cmaps.magma_r)
 p.register_cmap(name='plasma_r', cmap=cmaps.plasma_r)
 
-class vlimit(object):
+class VLimit(object):
     """
     Calculate data plot limits
     """
@@ -124,7 +124,6 @@ def data_cmap(vmin, vmax, ncolor, neutral_lim, options):
     # Custom color mappings
     cool_dict = {'blue': [(0.0, 0.0916, 0.0916), (0.365, 1.0, 1.0), (1.0, 1.0, 1.0)], 'green': [(0.0, 0.0, 0.0), (0.365, 0.0, 0.0), (1.0, 1.0, 1.0)], 'red': [(0.0, 0.0, 0.0), (0.746, 0.0, 0.0), (1.0, 0.0, 0.0)]}
     cool_cmap = mpcol.LinearSegmentedColormap('mod_cool', cool_dict)
-
     scale_frac = calc_scale_frac(neutral_lim, vmin, vmax)
     # Set cool maps with neutral cut off
     if vmin < 0 and vmax <= 0:
@@ -134,7 +133,13 @@ def data_cmap(vmin, vmax, ncolor, neutral_lim, options):
     # Set hot maps with neutral cut off
     else:
         if options.cmap:
-            cmap = p.get_cmap(options.cmap)
+            if ',' in options.cmap:
+                # Create a colormap from a list of colors
+                color_list = options.cmap.split(',')
+                colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
+                cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
+            else:
+                cmap = p.get_cmap(options.cmap)
         else:
             cmap = p.cm.summer_r
         lowx = 0
@@ -226,12 +231,18 @@ def diff_cmap(vmin, vmax, ncolor, neutral_lim, options):
         'blue': [(0.0, 0.58203125, 0.58203125), (0.125, 0.703125, 0.703125), (0.25, 0.81640625, 0.81640625), (0.375, 0.91015625, 0.91015625), (0.4999, 0.96875, 0.96875), (0.5, 1.0, 1.0), (0.5001, 0.5625, 0.5625), (0.625, 0.37890625, 0.37890625), (0.75, 0.26171875, 0.26171875), (0.875, 0.15234375, 0.15234375), (1.0, 0.1484375, 0.1484375)], 
         'green': [(0.0, 0.2109375, 0.2109375), (0.125, 0.45703125, 0.45703125), (0.25, 0.67578125, 0.67578125), (0.375, 0.84765625, 0.84765625), (0.4999, 0.94921875, 0.94921875), (0.5, 1.0, 1.0), (0.5001, 0.875, 0.875), (0.625, 0.6796875, 0.6796875), (0.75, 0.42578125, 0.42578125), (0.875, 0.1875, 0.1875), (1.0, 0.0, 0.0)], 
         'red': [(0.0, 0.19140625, 0.19140625), (0.125, 0.26953125, 0.26953125), (0.25, 0.453125, 0.453125), (0.375, 0.66796875, 0.66796875), (0.4999, 0.875, 0.875), (0.5, 1.0, 1.0), (0.5001, 0.9921875, 0.9921875), (0.625, 0.98828125, 0.98828125), (0.75, 0.953125, 0.953125), (0.875, 0.83984375, 0.83984375), (1.0, 0.64453125, 0.64453125)]}
-    diff_cmap = mpcol.LinearSegmentedColormap('mod_diff', diff_dict)
+    def_cmap = mpcol.LinearSegmentedColormap('mod_diff', diff_dict)
     cdict = {'red': [], 'green': [], 'blue': []}
     if options.cmap:
-        cmap = p.get_cmap(options.cmap)
+        if ',' in options.cmap:
+            # Create a colormap from a list of colors
+            color_list = options.cmap.split(',')
+            colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
+            cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
+        else:
+            cmap = p.get_cmap(options.cmap)
     else:
-        cmap = diff_cmap
+        cmap = def_cmap
     bins = calc_bins(options.bins)
     cmap = bin_colormap(cmap, bins)
     tick_total = calc_tick_total(bins, options.ticks)
@@ -251,9 +262,16 @@ def diff_cmap(vmin, vmax, ncolor, neutral_lim, options):
         # Remove color entries between the center neutral cutoff
         cdict[color] = [cbin for cbin in in_cdict[color] if cbin[0] > highx or cbin[0] < lowx]
         # Add the boundaries of the neutral center
-        cdict[color].append((lowx, cmap(lowx)[cnum], 0.82))
-        cdict[color].append((scale_center, 0.82, 0.88))
-        cdict[color].append((highx, 0.88, cmap(highx)[cnum]))
+        # Select a multi-grade color for difference if the ncolor is 0.82
+        if ncolor == 0.82:
+            low_neutral = 0.82
+            high_neutral = 0.88
+        else:
+            low_neutral = ncolor
+            high_neutral = ncolor
+        cdict[color].append((lowx, cmap(lowx)[cnum], low_neutral))
+        cdict[color].append((scale_center, low_neutral, high_neutral))
+        cdict[color].append((highx, high_neutral, cmap(highx)[cnum]))
         cdict[color].sort()
     if options.nfill:
         cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=bins)
