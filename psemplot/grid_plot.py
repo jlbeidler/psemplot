@@ -95,15 +95,19 @@ class GridPlot(object):
         # Increase the font size in hi-res output
         if options.hi_res:
             params = {'legend.fontsize': 28, 'axes.titlesize': 30, 'axes.titlepad': 1}
+            subtitle_fontsize = 22
         else:
-             params = {'legend.fontsize': 12}
+            params = {'legend.fontsize': 12}
+            subtitle_fontsize = 14
         matplotlib.rcParams.update(params)
         p.title(options.title.replace('@S',options.formula), fontweight='bold')
         if options.subtitle:
             subtitle = options.subtitle
         else:
-            subtitle = 'Max: {:.4}  Min: {:.4}'.format(self.raw_max, self.raw_min) 
-        p.text(.1, .1, subtitle, fontsize=14, verticalalignment='bottom')
+            print(options.mmround)
+            subtitle = 'Max: %s  Min: %s' %(round(self.raw_max, int(options.mmround)), 
+              round(self.raw_min, int(options.mmround)))
+        p.text(.1, .1, subtitle, fontsize=subtitle_fontsize, verticalalignment='bottom')
         if options.cutoff_list:
             proxy_shapes, tags = self.calc_legend_values(options.mask_less)
             leg = p.legend(proxy_shapes, tags, bbox_to_anchor=(1.02,0,0,1), loc='center left') 
@@ -112,8 +116,9 @@ class GridPlot(object):
             cbar = p.colorbar(self.data_plot, shrink=.75, ticks=(self.ticks))
             tick_labels = [self.format_tick(tick) for tick in self.ticks]
             if len(self.ticks) > 2:
-                tick_labels[0] = '<' + tick_labels[0]
-                tick_labels[-1] = '>' + tick_labels[-1]
+                if not options.boundscale:
+                    tick_labels[0] = '<' + tick_labels[0]
+                    tick_labels[-1] = '>' + tick_labels[-1]
                 cbar.ax.set_yticklabels(tick_labels, fontsize=params['legend.fontsize'])
             cbar.set_label(options.scalelabel, fontsize=params['legend.fontsize'])
 
@@ -138,8 +143,14 @@ class GridPlot(object):
             data = ma.masked_less(data, float(options.mask_less))
         vmax_lim = VLimit(options.vmax, data)
         vmin_lim = VLimit(options.vmin, data)
-        if vmin_lim.x == 0:
-            data[data < 0] = 0
+        # Mask values above and below the max/min if bounded
+        if options.boundscale:
+            data = ma.masked_less(data, vmin_lim.x)
+            data = ma.masked_greater(data, vmax_lim.x)
+        # For an unbounded scale set the data above and below the limits to the limits
+        else:
+            data[data < vmin_lim.x] = vmin_lim.x
+            data[data > vmax_lim.x] = vmax_lim.x
         self.neutral_lim = VLimit(options.neutral, data)
         if vmax_lim.x < 0:
             print('WARNING: Vmax is negative.  May result in plotting error.')

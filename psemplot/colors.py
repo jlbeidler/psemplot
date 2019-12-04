@@ -70,7 +70,7 @@ def calc_tick_total(bins, num_ticks):
         tick_total = 6
     return tick_total
 
-def calc_ticks(tick_total, vmax, vmin):
+def calc_ticks(tick_total, vmax, vmin, boundscale):
     '''
     Locate the ticks
     '''
@@ -81,6 +81,13 @@ def calc_ticks(tick_total, vmax, vmin):
             if round(tick, 8) == 0:
                 tick = 0
             ticks.append(tick)
+        # Keep the high and low ticks for bounded scales
+        elif boundscale:
+            if x == 0:
+                ticks.append(vmin)
+            elif x == tick_total - 1:
+                ticks.append(vmax)
+    # Insert a 0 for difference plots
     if vmin < 0 and vmax > 0 and 0 not in ticks:
             ticks.append(0)
     ticks.sort()
@@ -152,7 +159,7 @@ def data_cmap(vmin, vmax, ncolor, neutral_lim, options):
     else:
         bins = calc_bins(options.bins)
         tick_total = calc_tick_total(bins, options.ticks)
-        ticks = calc_ticks(tick_total, vmax, vmin)
+        ticks = calc_ticks(tick_total, vmax, vmin, options.boundscale)
         cmap = bin_colormap(cmap, bins)
     # Insert neutral at the position closest to zero
     if scale_frac > 0:
@@ -277,5 +284,6 @@ def diff_cmap(vmin, vmax, ncolor, neutral_lim, options):
         cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=bins)
     else:
         cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict)
-    return(cmap, calc_ticks(tick_total, vmax, vmin))
+    ticks = calc_ticks(tick_total, vmax, vmin, options.boundscale)
+    return(cmap, ticks)
 

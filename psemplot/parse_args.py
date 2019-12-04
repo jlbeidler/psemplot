@@ -28,6 +28,8 @@ def parse_args():
     parser.add_option('--hi-res', dest='hi_res', action='store_true', help='Output a high resolution plot', default=False)
     parser.add_option('--no-autoscale', dest='no_auto', action='store_true', help='Turn off the autoscaling and use exactly what is entered for max and min', default=False)
     parser.add_option('--report-max', dest='repmax', help='Report the scale maximum used to a file', default='')
+    parser.add_option('--minmax-round', dest='mmround', help='Digits past the decimal to round for min-max', default='4')
+    parser.add_option('--bound-scale', dest='boundscale', help='Bound the scale the specified maximum and minimum', default=False, action='store_true')
     (options, args) = parser.parse_args()
     if len(args) >= 2:
         if len(options.formula) < 3:
