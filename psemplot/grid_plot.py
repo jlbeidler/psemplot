@@ -104,7 +104,6 @@ class GridPlot(object):
         if options.subtitle:
             subtitle = options.subtitle
         else:
-            print(options.mmround)
             subtitle = 'Max: %s  Min: %s' %(round(self.raw_max, int(options.mmround)), 
               round(self.raw_min, int(options.mmround)))
         p.text(.1, .1, subtitle, fontsize=subtitle_fontsize, verticalalignment='bottom')
@@ -133,6 +132,33 @@ class GridPlot(object):
             print('Defaulting to grey neutral color.') # C.Allen removed %ncolor from this
             self.ncolor = ncolor_dict['grey']
 
+    def define_diff(self, vmin_lim, vmax_lim, data, no_auto):
+        '''
+        Define the min and max for difference data
+        '''
+        # Reset vmin_lim to 100% - vmax_lim if vmax_lim percent was used
+        # This sets up a check to help improve the scale around 0
+        if vmax_lim.per:
+            iv_max = '%s%%' %(100 - vmax_lim.nper + 1e-16)  # Put in some arbitrarily small value so that 0 isn't returned
+            print('NOTE: Resetting vmin_lim to %s to balance scale' %iv_max)
+            vmin_lim = VLimit(iv_max, data)
+        # Fix scale limits of very sparse difference data 
+        if (vmin_lim.x == vmax_lim.x) and vmax_lim.per:
+            print('NOTE: Very sparse data, resetting scale max to percentage of data max')
+            vmax_lim.x = vmax_lim.nper/100 * vmax_lim.data_max
+            print(vmax_lim.x)
+        if not no_auto:
+            # Check if the absolute value of the min is greater than the max
+            # If it is, select the max to be the absolute value of the min
+            if abs(vmin_lim.x) > vmax_lim.x and vmin_lim.x < 0 and not no_auto:
+                print('NOTE: Setting vmax_lim to absolute value of vmin_lim')
+                vmax_lim = VLimit(str(abs(vmin_lim.x)), data)
+            else:
+            # Otherwise set the min to be the negative of the max
+                print('NOTE: Setting vmin_lim to negative of vmax_lim')
+                vmin_lim = VLimit(str((vmax_lim.x * -1)), data)
+        return (vmin_lim, vmax_lim)
+
     def assign_colors(self, data, options):
         """
         Populate the values -> colors -> FIPS for polygon filling
@@ -143,15 +169,8 @@ class GridPlot(object):
             data = ma.masked_less(data, float(options.mask_less))
         vmax_lim = VLimit(options.vmax, data)
         vmin_lim = VLimit(options.vmin, data)
-        # Mask values above and below the max/min if bounded
-        if options.boundscale:
-            data = ma.masked_less(data, vmin_lim.x)
-            data = ma.masked_greater(data, vmax_lim.x)
-        # For an unbounded scale set the data above and below the limits to the limits
-        else:
-            data[data < vmin_lim.x] = vmin_lim.x
-            data[data > vmax_lim.x] = vmax_lim.x
         self.neutral_lim = VLimit(options.neutral, data)
+        # Check to see if this is a "negative only" plot
         if vmax_lim.x < 0:
             print('WARNING: Vmax is negative.  May result in plotting error.')
             # Deal with a scale where all data values are less than zero
@@ -166,46 +185,35 @@ class GridPlot(object):
                     vmin_lim = VLimit(str(vmax_lim.x * -1), data)
                 neutral_per = '%s%%' %(100 - self.neutral_lim.nper) 
                 self.neutral_lim = VLimit(neutral_per, data)
+        # Setup the ticks for the legend
         self.ticks = []
+        # Is it difference data?
         if (((np.amin(data) < 0 and np.amax(data) > 0) and (vmin_lim.x <= 0 and vmax_lim.x >= 0)) or \
             options.force_diff):
             # Set up a difference color map when the absolute max and min sit on opposite
             # sides of zero
             print('NOTE: Difference data detected')
-            # Reset vmin_lim to 100% - vmax_lim if vmax_lim percent was used
-            # This sets up a check to help improve the scale around 0
-            if vmax_lim.per:
-                iv_max = '%s%%' %(100 - vmax_lim.nper + 1e-16)  # Put in some arbitrarily small value so that 0 isn't returned
-                print('NOTE: Resetting vmin_lim to %s to balance scale' %iv_max)
-                vmin_lim = VLimit(iv_max, data)
-            # Fix scale limits of very sparse difference data 
-            if (vmin_lim.x == vmax_lim.x) and vmax_lim.per:
-                print('NOTE: Very sparse data, resetting scale max to percentage of data max')
-                vmax_lim.x = vmax_lim.nper/100 * vmax_lim.data_max
-                print(vmax_lim.x)
-            if not options.no_auto:
-                # Check if the absolute value of the min is greater than the max
-                # If it is, select the max to be the absolute value of the min
-                if abs(vmin_lim.x) > vmax_lim.x and vmin_lim.x < 0 and not options.no_auto:
-                    print('NOTE: Setting vmax_lim to absolute value of vmin_lim')
-                    vmax_lim = VLimit(str(abs(vmin_lim.x)), data)
-                else:
-                # Otherwise set the min to be the negative of the max
-                    print('NOTE: Setting vmin_lim to negative of vmax_lim')
-                    vmin_lim = VLimit(str((vmax_lim.x * -1)), data)
-            if options.ncolor:
-                ncolor = self.ncolor
-            else:
-                ncolor = 0.82
-            self.cmap, self.ticks = diff_cmap(vmin_lim.x, vmax_lim.x, ncolor, self.neutral_lim, options)
+            vmin_lim, vmax_lim = self.define_diff(vmin_lim, vmax_lim, data, options.no_auto)
+            if not options.ncolor:
+                self.ncolor = 0.82
+            color_def = diff_cmap
         else:
             # Use standard map
             print('NOTE: Standard plot data detected')
-            self.cmap, self.ticks = data_cmap(vmin_lim.x, vmax_lim.x, self.ncolor, self.neutral_lim, options)
+            color_def = data_cmap
+        self.cmap, self.ticks = color_def(vmin_lim.x, vmax_lim.x, self.ncolor, self.neutral_lim, options)
         if options.repmax:
             print('NOTE: Scale maximum set to %s' %vmax_lim.x)
             with open(options.repmax, 'w') as f:
                 f.write(str(vmax_lim.x))
+        # Mask values above and below the max/min if bounded
+        if options.boundscale:
+            data = ma.masked_less(data, vmin_lim.x)
+            data = ma.masked_greater(data, vmax_lim.x)
+        # For an unbounded scale set the data above and below the limits to the limits
+        else:
+            data[data < vmin_lim.x] = vmin_lim.x
+            data[data > vmax_lim.x] = vmax_lim.x
         self.data_plot = self.m.pcolormesh(self.cols, self.rows, data, cmap=self.cmap, vmin=vmin_lim.x, vmax=vmax_lim.x)
 
     def write_plot(self, out_file, hi_res):
