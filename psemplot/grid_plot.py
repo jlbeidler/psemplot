@@ -54,37 +54,31 @@ class GridPlot(object):
             tick = '%.3f' %tick
         return tick
 
-    def calc_legend_values(self, mask_less):
+    def calc_legend_values(self, options):
         '''
         Develop the legend if there are uneven cutoffs
         '''
         proxy_shapes = []
         tags = []
         ticks = self.ticks[:]
-        if self.neutral_lim.x > 0:
+        if self.neutral_lim.x > 0 and ticks[0] >= 0:
             ticks.insert(0, self.neutral_lim.x)
             if float(ticks[0]) > float(ticks[1]):
                 raise ValueError('Neutral cut off value greater than specified cut off values')
-        if mask_less:
-            ticks.insert(0, float(mask_less))
         for tick_num, tick_val in enumerate(ticks):
-            if tick_num == 0:
-                if mask_less:
-                    color_val = 'white'
-                else:
-                    color_val = self.data_plot.to_rgba(tick_val/2.)
-                tag = '%s to %s' %(0, self.format_tick(tick_val, True))
-            else:
+            if tick_num > 0:
                 prev_val = ticks[tick_num-1]
-                color_val = self.data_plot.to_rgba(prev_val + (tick_val-prev_val)/2)
                 tag = '%s to %s' %(self.format_tick(prev_val, True), self.format_tick(tick_val, True))
-            proxy_shapes.append(p.Rectangle((0,0),1,1,fc=color_val))
-            tags.append(tag)
-            # Append the trailing label
-            if tick_num == len(ticks)-1:
-                tag = '%s +' %self.format_tick(tick_val, True)
-                proxy_shapes.append(p.Rectangle((0,0),1,1,fc=self.data_plot.to_rgba(tick_val*1.1)))
+                if not options.boundscale:
+                    if tick_num == 1:
+                        tag = '< %s' %self.format_tick(tick_val, True)
+                    elif tick_num == len(ticks)-1:
+                        tag = '> %s' %self.format_tick(ticks[tick_num-1], True)
                 tags.append(tag)
+        # Remap the values to the scale 
+        cmin, cmax = (self.data_plot.get_clim()[0]*0.9,self.data_plot.get_clim()[1]*0.9)
+        cnums = [cmin+(n*((cmax-cmin)/(len(tags)-1))) for n in range(len(tags))]
+        [proxy_shapes.append(p.Rectangle((0,0),1,1,fc=self.data_plot.to_rgba(val))) for val in cnums]
         return proxy_shapes, tags
 
     def title_plot(self, options):
@@ -108,7 +102,7 @@ class GridPlot(object):
               round(self.raw_min, int(options.mmround)))
         p.text(.1, .1, subtitle, fontsize=subtitle_fontsize, verticalalignment='bottom')
         if options.cutoff_list:
-            proxy_shapes, tags = self.calc_legend_values(options.mask_less)
+            proxy_shapes, tags = self.calc_legend_values(options)
             leg = p.legend(proxy_shapes, tags, bbox_to_anchor=(1.02,0,0,1), loc='center left') 
             leg.set_title(options.scalelabel, prop = {'size': params['legend.fontsize']})
         else:
@@ -188,7 +182,7 @@ class GridPlot(object):
         # Setup the ticks for the legend
         self.ticks = []
         # Is it difference data?
-        if (((np.amin(data) < 0 and np.amax(data) > 0) and (vmin_lim.x <= 0 and vmax_lim.x >= 0)) or \
+        if (((np.amin(data) < 0 and np.amax(data) > 0) and (vmin_lim.x < 0 and vmax_lim.x >= 0)) or \
             options.force_diff):
             # Set up a difference color map when the absolute max and min sit on opposite
             # sides of zero
