@@ -12,23 +12,23 @@ from matplotlib.collections import LineCollection
 from .colors import diff_cmap, data_cmap, VLimit
 
 class GridPlot(object):
-
-    def __init__(self, in_file, shape_file, shape_att):
+    def __init__(self, in_file, options):
         from . import projection
         self.proj = projection.GridProj(in_file)
         self.m = self.proj.proj_map
         self.cols = np.array([in_file.xcell * (col + 0.5) for col in range(in_file.cols)])
         self.rows = np.array([in_file.ycell * row for row in range(in_file.rows)])
-        self.draw_shape(self.proj.name, shape_file, shape_att)
+        self.draw_shape(self.proj.name, options.shape_file, options.shape_att, options.drawstates)
         self.colors = {}
 
-    def draw_shape(self, proj_name, shape_file, shape_att):
+    def draw_shape(self, proj_name, shape_file, shape_att, draw_states):
         '''
         Read the shapefile onto the map and drop the lines
         '''
         if shape_file:
             map_shape = self.m.readshapefile(shape_file, shape_att, drawbounds=True, linewidth=0.3)           
-        else:
+        if not shape_file or draw_states:
+            self.m.drawstates()
             self.m.drawcountries()
             self.m.drawcoastlines()
 

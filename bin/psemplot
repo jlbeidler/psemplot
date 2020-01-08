@@ -24,7 +24,7 @@ def script_mode(options, args):
     # Calculate the plottable 2D dataset from the formula and input files
     print('Plotting formula:  %s' %out_form)
     data = eval(out_form)
-    ann_plot = GridPlot(inf_dict['A'], options.shape_file, options.shape_att)
+    ann_plot = GridPlot(inf_dict['A'], options)
     ann_plot.set_neutral_color(options.ncolor.lower())
     ann_plot.assign_colors(data, options)
     ann_plot.title_plot(options)
