@@ -76,8 +76,7 @@ class GridPlot(object):
                         tag = '> %s' %self.format_tick(ticks[tick_num-1], True)
                 tags.append(tag)
         # Remap the values to the scale 
-        cmin, cmax = (self.data_plot.get_clim()[0]*0.9,self.data_plot.get_clim()[1]*0.9)
-        cnums = [cmin+(n*((cmax-cmin)/(len(tags)-1))) for n in range(len(tags))]
+        cnums = [(ticks[n+1] - ticks[n])/2 + ticks[n] for n in range(len(ticks)-1)]
         [proxy_shapes.append(p.Rectangle((0,0),1,1,fc=self.data_plot.to_rgba(val))) for val in cnums]
         return proxy_shapes, tags
 
@@ -161,6 +160,12 @@ class GridPlot(object):
         self.raw_max = data.max()
         if options.mask_less:
             data = ma.masked_less(data, float(options.mask_less))
+        if options.cutoff_list:
+            print('NOTE: Using cutoffs. Ignoring max and min specifications. Turning off autoscaling.')
+            cuts = sorted([float(n) for n in options.cutoff_list.strip().split(',')])
+            options.vmax = str(cuts[-1])
+            options.vmin = str(cuts[0])
+            options.no_auto = True 
         vmax_lim = VLimit(options.vmax, data)
         vmin_lim = VLimit(options.vmin, data)
         self.neutral_lim = VLimit(options.neutral, data)
