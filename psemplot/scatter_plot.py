@@ -11,13 +11,13 @@ import numpy.ma as ma
 from matplotlib.collections import LineCollection
 from .colors import Colors, VLimit
 
-class GridPlot(object):
+class ScatterPlot(object):
     def __init__(self, in_file, opts):
         from . import projection
         self.proj = projection.GridProj(in_file)
         self.m = self.proj.proj_map
-        self.cols = np.array([in_file.xcell * (col + 0.5) for col in range(in_file.cols)])
-        self.rows = np.array([in_file.ycell * row for row in range(in_file.rows)])
+        self.lat = in_file.lat
+        self.lon = in_file.lon
         self.draw_shape(self.proj.name, opts.shape_file, opts.shape_att, opts.drawstates)
         self.colors = {}
 
@@ -28,9 +28,9 @@ class GridPlot(object):
         if shape_file:
             map_shape = self.m.readshapefile(shape_file, shape_att, drawbounds=True, linewidth=0.3)           
         if not shape_file or draw_states:
-            self.m.drawstates()
-            self.m.drawcountries()
-            self.m.drawcoastlines()
+            self.m.drawstates(linewidth=1.5)
+            self.m.drawcountries(linewidth=1.5)
+            #self.m.drawcoastlines()
 
     def format_tick(self, tick, use_absolute=False):
         '''
@@ -156,6 +156,8 @@ class GridPlot(object):
         """
         Populate the values -> colors -> FIPS for polygon filling
         """
+        # Lat/lon data must be flat and same length as lat and lon arrays
+        data = data.ravel()
         self.raw_min = data.min()
         self.raw_max = data.max()
         if opts.mask_less:
@@ -214,7 +216,8 @@ class GridPlot(object):
         else:
             data[data < vmin_lim.x] = vmin_lim.x
             data[data > vmax_lim.x] = vmax_lim.x
-        self.data_plot = self.m.pcolormesh(self.cols, self.rows, data, cmap=self.cmap, vmin=vmin_lim.x, vmax=vmax_lim.x)
+        self.data_plot = self.m.scatter(self.lon, self.lat, c=data, cmap=self.cmap, 
+          vmin=vmin_lim.x, vmax=vmax_lim.x, latlon=True, s=data)
 
     def write_plot(self, out_file, hi_res):
         """
