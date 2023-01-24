@@ -66,7 +66,6 @@ class VLimit(object):
             raise TypeError('Invalid limit.  Check vmax and vmin values.')
         self.x = vx    
 
-
 class Colors:
     '''
     Container class for color and scale relate functions
@@ -162,70 +161,50 @@ class Colors:
     #        raise ValueError('Lowest cutoff value must be greater than zero.')
         return cutoffs
 
-    def data_cmap(self, ncolor, opts):
-        """
-        Generate a gradated colormap or continous, depending on bins specified
-        Continuous really 256 colors gradated, but with ability to extend neutral.
-        The neutral cut off is not used for gradated color maps.  Grey is either the first bin
-            or neutral is turned off entirely.
-        """
-        scale_frac = self.calc_scale_frac()
-        colors = []
-        # Set cool maps with neutral cut off
-        if self.vmin < 0 and self.vmax <= 0:
-            cmap = cool_cmap
-            neutral_range = (scale_frac, 1)
-        # Set hot maps with neutral cut off
+    def set_neutral(self, cmap, ncolor, neutral_range, scale_center=0):
+        '''
+        Set the neutral color range in the colormap
+        '''
+        cdict = {'red': [], 'green': [], 'blue': []}
+        for cnum, color in enumerate(('red','green','blue')):
+            # Remove color entries between the center neutral cutoff
+            cdict[color] = [cbin for cbin in cmap._segmentdata[color] \
+              if cbin[0] > neutral_range[1] or cbin[0] < neutral_range[0]]
+            # Set the top and bottom colors for the neutral range
+            low_neutral = ncolor
+            high_neutral = ncolor
+            # Define neutrals for difference plots
+            if scale_center != 0:
+                # Add the boundaries of the neutral center
+                # Select a multi-grade color for difference if the ncolor is 0.82
+                if ncolor == 0.82:
+                    low_neutral = 0.82
+                    high_neutral = 0.88
+                cdict[color].append((scale_center, low_neutral, high_neutral))
+            cdict[color].append((neutral_range[0], cmap(neutral_range[0])[cnum], low_neutral))
+            cdict[color].append((neutral_range[1], high_neutral, cmap(neutral_range[1])[cnum]))
+            cdict[color].sort()
+        return cdict
+
+    def arg_cmap(self, cmap):
+        '''
+        Generate a colormap from a command line argument colormap name or list of colors
+        '''
+        if ',' in cmap:
+            # Create a colormap from a list of colors
+            color_list = cmap.split(',')
+            colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
+            cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
         else:
-            if opts.cmap:
-                if ',' in opts.cmap:
-                    # Create a colormap from a list of colors
-                    color_list = opts.cmap.split(',')
-                    colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
-                    cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
-                else:
-                    cmap = p.get_cmap(opts.cmap)
-            else:
-                cmap = p.cm.summer_r
-            neutral_range = (0, scale_frac)
-        # Setup the ticks and bins
-        if opts.cutoff_list:
-            cutoff_list = self.parse_cutoffs(opts.cutoff_list)
-            ticks = cutoff_list
-            cmap = self.uneven_colormap(cmap, cutoff_list)
-        else:
-            bins = self.calc_bins(opts.bins)
-            ticks = self.calc_ticks(bins, opts, neutral_range)
-            # Do some scaling and insert neutral if colors were not specific
-            if not colors:
-                cmap = self.bin_colormap(cmap, bins)
-                in_cdict = cmap._segmentdata
-                # Insert neutral at the position closest to zero
-                if scale_frac > 0:
-                    cdict = {'red': [], 'green': [], 'blue': []}
-                    for cnum,color in enumerate(('red','green','blue')):
-                        # Remove color entries between the center neutral cutoff
-                        cdict[color] = [cbin for cbin in in_cdict[color] \
-                          if cbin[0] > neutral_range[1] or cbin[0] < neutral_range[0]]
-                        # Add the boundaries of the neutral center
-                        cdict[color].append((neutral_range[0], cmap(neutral_range[0])[cnum], ncolor))
-                        cdict[color].append((neutral_range[1], ncolor, cmap(neutral_range[1])[cnum]))
-                        cdict[color].sort()
-                else:
-                    cdict = in_cdict
-                if opts.nfill and not opts.cutoff_list:
-                    cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=bins)
-                else:
-                    cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=100000)
-        return (cmap, ticks)
+            cmap = p.get_cmap(cmap)
+        return cmap
 
     def bin_colormap(self, cmap, bins):
         '''
-        Descretize the colormap based on the number of bins
+        Discretize the colormap based on the number of bins
         '''
-        cuts = bins + 1
         cdict = {'red': [], 'green': [], 'blue': []}
-        for cut_num in range(cuts):
+        for cut_num in range(bins+1):
             x = (1./float(bins)) * float(cut_num)
             if x > 1:
                 x = 1.
@@ -244,7 +223,7 @@ class Colors:
 
     def uneven_colormap(self, cmap, cutoff_list):
         '''
-        Descretize the colormap based on a list
+        Discretize the colormap based on a list
         '''
         cdict = {'red': [], 'green': [], 'blue': []}
         # To accomodate negative values add the smallest value to each number and then calculate cut list
@@ -278,59 +257,82 @@ class Colors:
         The neutral cut off is not used for gradated color maps.  Grey is either the first bin
             or neutral is turned off entirely.
         """
-        colors = []
-        # Setup color map
+        # Define the colormap from the command line arguments 
         if opts.cmap:
-            if ',' in opts.cmap:
-                # Create a colormap from a list of colors
-                color_list = opts.cmap.split(',')
-                colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
-                cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
-            else:
-                cmap = p.get_cmap(opts.cmap)
+            cmap = self.arg_cmap(opts.cmap)
+        #  or use a default
         else:
             cmap = rb_diff_cmap
-        # Setup the ticks and bins
+        # If there is a list of bin cutoffs then use those to define the bins and ticks
         if opts.cutoff_list:
             cutoff_list = self.parse_cutoffs(opts.cutoff_list)
             ticks = cutoff_list
             cmap = self.uneven_colormap(cmap, cutoff_list)
+        #  otherwise generate the scale using the number of bins and the vmin/vmax
         else:
             bins = self.calc_bins(opts.bins)
+            # Determine where on the 0 to 1 scale to place the center of the scale
             if opts.no_auto:
                 scale_center = abs((0-self.vmin)/(self.vmax-self.vmin))
             else:
                 scale_center = 0.5
             scale_frac = self.calc_scale_frac(scale_center)
+            # Place the neutral colors about the center
             neutral_range = (scale_center - scale_frac, scale_center + scale_frac)
             if neutral_range[0] < 0 or neutral_range[1] > 1:
                 raise ValueError('Neutral value outside scale of plot')
             ticks = self.calc_ticks(bins, opts, neutral_range)
-            # Do some scaling and insert neutral if colors were not specific
-            if not colors: 
+            # Do some scaling and insert neutral if list of colors were not specified on the command line
+            if ',' not in opts.cmap: 
                 cmap = self.bin_colormap(cmap, bins)
-                # Insert neutral around the mid point using the new colormap
-                in_cdict = cmap._segmentdata
-                cdict = {'red': [], 'green': [], 'blue': []}
-                for cnum, color in enumerate(('red','green','blue')):
-                    # Remove color entries between the center neutral cutoff
-                    cdict[color] = [cbin for cbin in in_cdict[color] \
-                      if cbin[0] > neutral_range[1] or cbin[0] < neutral_range[0]]
-                    # Add the boundaries of the neutral center
-                    # Select a multi-grade color for difference if the ncolor is 0.82
-                    if ncolor == 0.82:
-                        low_neutral = 0.82
-                        high_neutral = 0.88
-                    else:
-                        low_neutral = ncolor
-                        high_neutral = ncolor
-                    cdict[color].append((neutral_range[0], cmap(neutral_range[0])[cnum], low_neutral))
-                    cdict[color].append((scale_center, low_neutral, high_neutral))
-                    cdict[color].append((neutral_range[1], high_neutral, cmap(neutral_range[1])[cnum]))
-                    cdict[color].sort()
+                cdict = self.set_neutral(cmap, ncolor, neutral_range, scale_center)
                 if opts.nfill:
                     cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=bins)
                 else:
                     cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict)
         return(cmap, ticks)
+
+    def data_cmap(self, ncolor, opts):
+        """
+        Generate a gradated colormap or continous, depending on bins specified
+        Continuous really 256 colors gradated, but with ability to extend neutral.
+        The neutral cut off is not used for gradated color maps.  Grey is either the first bin
+            or neutral is turned off entirely.
+        """
+        scale_frac = self.calc_scale_frac()
+        # Set cool maps with neutral cut off if scale is negative
+        if self.vmin < 0 and self.vmax <= 0:
+            cmap = cool_cmap
+            neutral_range = (scale_frac, 1)
+        # Set hot maps with neutral cut off if scale is positive
+        else:
+            cmap = p.cm.summer_r
+            neutral_range = (0, scale_frac)
+        # Define the colormap from the command line arguments if set
+        if opts.cmap:
+            cmap = self.arg_cmap(opts.cmap)
+        # If there is a list of bin cutoffs then use those to define the bins and ticks
+        if opts.cutoff_list:
+            cutoff_list = self.parse_cutoffs(opts.cutoff_list)
+            ticks = cutoff_list
+            cmap = self.uneven_colormap(cmap, cutoff_list)
+        #  otherwise generate the scale using the number of bins and the vmin/vmax
+        else:
+            bins = self.calc_bins(opts.bins)
+            ticks = self.calc_ticks(bins, opts, neutral_range)
+            # Do some scaling and insert neutral if list of colors were not specified on the command line
+            if ',' not in opts.cmap: 
+                cmap = self.bin_colormap(cmap, bins)
+                in_cdict = cmap._segmentdata
+                # Insert neutral at the position closest to zero
+                if scale_frac > 0:
+                    cdict = self.set_neutral(cmap, ncolor, neutral_range)
+                else:
+                    cdict = cmap._segmentdata 
+                if opts.nfill and not opts.cutoff_list:
+                    cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=bins)
+                else:
+                    cmap = mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, N=100000)
+        return (cmap, ticks)
+
 

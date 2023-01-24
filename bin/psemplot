@@ -29,7 +29,8 @@ def script_mode(options, args):
     ann_plot = plots[options.plottype](inf_dict['A'], options)
     ann_plot.set_neutral_color(options.ncolor.lower())
     ann_plot.assign_colors(data, options)
-    ann_plot.title_plot(options)
+    ann_plot.draw_title(options)
+    ann_plot.draw_legend(options)
     ann_plot.write_plot(outfile_name, options.hi_res)
 
 def main():

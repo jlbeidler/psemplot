@@ -15,7 +15,6 @@ def load_input(module_name, infile_name):
     Validate an input module and load the file
     '''
     mod = il.import_module('.%s' %module_name, 'psemplot.inputs')
-    
     # Initialize the PsempData object
     try:
         data_obj = mod.PsempData(infile_name)

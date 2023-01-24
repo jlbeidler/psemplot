@@ -26,7 +26,7 @@ def parse_args():
     scale_group.add_option('--neutral-fill', dest='nfill', help='Fill color bins on scale with neutral color rather than overlap', default=False, action='store_true')
     draw_group.add_option('--shape-file', dest='shape_file', help='Path to custom shapefile', default='')
     draw_group.add_option('--shape-att', dest='shape_att', help='Shapefile attribute to plot', default='')
-    draw_group.add_option('--cmap', dest='cmap', help='Matplotlib colormap', default=None)
+    draw_group.add_option('--cmap', dest='cmap', help='Matplotlib colormap', default='')
     data_group.add_option('--mask_less', dest='mask_less', help='Mask values lower than the specified value from the plot', default=None)
     scale_group.add_option('--force-diff', dest='force_diff', action='store_true', help='Force a difference colormap even if data has consistent signs', default=False)
     draw_group.add_option('--hi-res', dest='hi_res', action='store_true', help='Output a high resolution plot', default=False)

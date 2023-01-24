@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name="psemplot",
-    version="0.2.0",
+    version="0.3.0",
     packages = find_packages(),
     scripts = ['bin/psemplot',],
     python_requires='>=3.5',
