@@ -157,8 +157,6 @@ class Colors:
                 raise TypeError('Invalid cutoff value in cutoff list.')
             cutoffs.append(val)
         cutoffs.sort()
-    #    if cutoffs[0] <= 0:
-    #        raise ValueError('Lowest cutoff value must be greater than zero.')
         return cutoffs
 
     def set_neutral(self, cmap, ncolor, neutral_range, scale_center=0):
@@ -193,8 +191,7 @@ class Colors:
         if ',' in cmap:
             # Create a colormap from a list of colors
             color_list = cmap.split(',')
-            colors = [(x/(len(color_list) - 1), color.lower()) for x, color in enumerate(color_list)]
-            cmap = mpcol.LinearSegmentedColormap.from_list('', colors)
+            cmap = mpcol.LinearSegmentedColormap.from_list('', color_list, N=len(color_list))
         else:
             cmap = p.get_cmap(cmap)
         return cmap
@@ -221,35 +218,6 @@ class Colors:
                 cdict[color].append((x, ya, yb))
         return mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict, bins)
 
-    def uneven_colormap(self, cmap, cutoff_list):
-        '''
-        Discretize the colormap based on a list
-        '''
-        cdict = {'red': [], 'green': [], 'blue': []}
-        # To accomodate negative values add the smallest value to each number and then calculate cut list
-        min_val = abs(sorted(cutoff_list)[0])
-        max_val = abs(sorted(cutoff_list)[-1])
-        x_cutlist = [((cut_value + min_val)/(max_val + min_val)) for cut_value in cutoff_list]
-        # Add a leading 0 and 1 if needed
-        if x_cutlist[0] != 0:
-            x_cutlist = [0,] + x_cutlist
-        if x_cutlist[-1] != 1:
-            x_cutlist.append(1)
-        cmap_colors = [cmap((2*n + 1)/((len(x_cutlist) - 1)*2)) for n in range(len(x_cutlist) - 1)]
-        # Assign the colors for each bin
-        for cut_num, x in enumerate(x_cutlist):
-            for cnum, color in enumerate(('red','green','blue')):
-                if cut_num == 0:
-                    ya = cmap_colors[cut_num][cnum]
-                else:
-                    ya = cmap_colors[cut_num - 1][cnum]
-                if cut_num == len(x_cutlist) - 1:
-                    ya = cmap_colors[cut_num - 1][cnum]
-                else:
-                    yb = cmap_colors[cut_num][cnum]
-                cdict[color].append((x, ya, yb))
-        return mpcol.LinearSegmentedColormap('neutral_jet_disc', cdict)
-        
     def diff_cmap(self, ncolor, opts):
         """
         Generate a gradated colormap or continous, depending on bins specified
@@ -265,9 +233,7 @@ class Colors:
             cmap = rb_diff_cmap
         # If there is a list of bin cutoffs then use those to define the bins and ticks
         if opts.cutoff_list:
-            cutoff_list = self.parse_cutoffs(opts.cutoff_list)
-            ticks = cutoff_list
-            cmap = self.uneven_colormap(cmap, cutoff_list)
+            ticks = self.parse_cutoffs(opts.cutoff_list)
         #  otherwise generate the scale using the number of bins and the vmin/vmax
         else:
             bins = self.calc_bins(opts.bins)
@@ -313,9 +279,7 @@ class Colors:
             cmap = self.arg_cmap(opts.cmap)
         # If there is a list of bin cutoffs then use those to define the bins and ticks
         if opts.cutoff_list:
-            cutoff_list = self.parse_cutoffs(opts.cutoff_list)
-            ticks = cutoff_list
-            cmap = self.uneven_colormap(cmap, cutoff_list)
+            ticks = self.parse_cutoffs(opts.cutoff_list)
         #  otherwise generate the scale using the number of bins and the vmin/vmax
         else:
             bins = self.calc_bins(opts.bins)

@@ -21,6 +21,7 @@ class DataPlot:
         self.y = False 
         self.draw_shape(self.proj.name, opts.shape_file, opts.shape_att, opts.drawstates)
         self.set_fontsize(opts)
+        self.norm = False
 
     def draw_shape(self, proj_name, shape_file, shape_att, draw_states):
         '''
@@ -110,12 +111,17 @@ class DataPlot:
         '''
         Draw the legend
         '''
-        if opts.cutoff_list:
+        if opts.box_legend:
             proxy_shapes, tags = self.calc_legend_values(opts)
             leg = p.legend(proxy_shapes, tags, bbox_to_anchor=(1.02,0,0,1), loc='center left') 
             leg.set_title(opts.scalelabel, prop = {'size': self.params['legend.fontsize']})
         else:
-            cbar = p.colorbar(self.data_plot, shrink=.75, ticks=(self.ticks))
+            if opts.boundscale:
+                cbar = p.colorbar(self.data_plot, shrink=0.75, ticks=(self.ticks), 
+                  extend='neither', spacing='uniform')
+            else:
+                cbar = p.colorbar(self.data_plot, shrink=.75, ticks=(self.ticks), extend='both', 
+                  extendrect=True, extendfrac='auto', spacing='uniform')
             tick_labels = [self.format_tick(tick) for tick in self.ticks]
             if len(self.ticks) > 2:
                 if not opts.boundscale:
@@ -213,6 +219,9 @@ class DataPlot:
         if opts.repmax:
             self.report_scale_max(opts.repmax, vmax_lim.x)
         data = self.set_data_bounds(data, vmin_lim.x, vmax_lim.x, opts)
+        # Normalize the colormap for a cutoff list
+        if opts.cutoff_list:
+            self.norm =  matplotlib.colors.BoundaryNorm(boundaries=self.ticks, ncolors=len(self.ticks)+1, extend='both')
         # Draw the colormesh
         self.draw_plot(data, vmin_lim.x, vmax_lim.x)
 

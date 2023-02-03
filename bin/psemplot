@@ -6,12 +6,12 @@ from psemplot.scatter_plot import ScatterPlot
 from psemplot.helpers import get_inputs, parse_form
 from psemplot.parse_args import parse_args
 
-def script_mode(options, args):
+def script_mode(opts, args):
     in_list = [args[x] for x in range(len(args)-1)]
     outfile_name = args[-1]
-    inf_dict = get_inputs(in_list, options.inputtype)
+    inf_dict = get_inputs(in_list, opts.inputtype)
     # Get the Python-ready formula and pollutant list
-    out_form, pol_list = parse_form(options.formula)
+    out_form, pol_list = parse_form(opts.formula)
     # Get the values of the species used in the formula from the netCDFs
     species = {}
     for pol in pol_list:
@@ -21,21 +21,21 @@ def script_mode(options, args):
         except:
             raise ValueError('File "%s" referenced in formula, but no such file entry exists.' %pol[-1])
         # Get the 2D dataset for the species/pollutant from the referenced netCDF
-        species[pol] = in_file.var(pol_name)[int(options.time_step),0,:,:]
+        species[pol] = in_file.var(pol_name)[int(opts.time_step),0,:,:]
     # Calculate the plottable 2D dataset from the formula and input files
     print('Plotting formula:  %s' %out_form)
     data = eval(out_form)
     plots = {'gridded': GridPlot, 'scatter': ScatterPlot}
-    ann_plot = plots[options.plottype](inf_dict['A'], options)
-    ann_plot.set_neutral_color(options.ncolor.lower())
-    ann_plot.assign_colors(data, options)
-    ann_plot.draw_title(options)
-    ann_plot.draw_legend(options)
-    ann_plot.write_plot(outfile_name, options.hi_res)
+    ann_plot = plots[opts.plottype](inf_dict['A'], opts)
+    ann_plot.set_neutral_color(opts.ncolor.lower())
+    ann_plot.assign_colors(data, opts)
+    ann_plot.draw_title(opts)
+    ann_plot.draw_legend(opts)
+    ann_plot.write_plot(outfile_name, opts.hi_res)
 
 def main():
-    options, args = parse_args()
-    script_mode(options, args)
+    opts, args = parse_args()
+    script_mode(opts, args)
 
 if __name__ == '__main__':
     main()

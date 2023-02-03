@@ -19,5 +19,8 @@ class GridPlot(DataPlot):
         '''
         Draw the plot based on the data and plot type
         '''
-        self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, vmin=vmin, vmax=vmax)
+        if self.norm:
+            self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, norm=self.norm, shading='auto')
+        else:
+            self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, vmin=vmin, vmax=vmax)
 

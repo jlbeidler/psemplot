@@ -21,6 +21,7 @@ def parse_args():
     scale_group.add_option('--vmax', dest='vmax', help='Scale maximum cutoff.  Add "%" to the end to use percentile. Defaults to 95th percentile.', default='95%')
     scale_group.add_option('-g', dest='neutral', help='Use neutral color for values within x of 0 (or closest limit to 0).  Defaults to 0.01%.  Use single number 0-100%. 0% Disables neutral.', default='0.01%')
     scale_group.add_option('--cutoffs', dest='cutoff_list', help='Optional list of scale cutoffs to create uneven bins. Currently only works with data values zero or higher.', default='')
+    scale_group.add_option('--box-legend', dest='box_legend', help='Use boxes for a legend rather than a colorbar', default=False, action='store_true')
     scale_group.add_option('--neutral-labels', dest='neutral_labels', help='Label the edgees of the neutral area', default=False, action='store_true')
     draw_group.add_option('--neutral-color', dest='ncolor', help='Set neutral color to white, grey, or black', default='')
     scale_group.add_option('--neutral-fill', dest='nfill', help='Fill color bins on scale with neutral color rather than overlap', default=False, action='store_true')
