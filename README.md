@@ -9,8 +9,9 @@ Python 3.5 or later is required.
 Psemplot is tested with numpy 1.12, netCDF4 1.2.9, pyproj, and matplotlib with basemap. Variations in module versions may introduce incompatibilities.
 
 # Installation
-Installation may be done using Python setuptools.
-Simply run python3 setup.py install to begin the process.
+Installation may be done using Python setuptools and pip.
+python setup.py build sdist
+pip install dist/psemplot-#.#.#.tar.gz
 
 # Example Command Lines
 Creation of simple autoscaled plot of NOX:

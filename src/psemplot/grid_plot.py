@@ -22,5 +22,5 @@ class GridPlot(DataPlot):
         if self.norm:
             self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, norm=self.norm, shading='auto')
         else:
-            self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, vmin=vmin, vmax=vmax)
+            self.data_plot = self.m.pcolormesh(self.x, self.y, data, cmap=self.cmap, vmin=vmin, vmax=vmax, shading='auto')
 

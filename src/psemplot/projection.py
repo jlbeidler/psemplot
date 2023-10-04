@@ -41,9 +41,10 @@ class GridProj(object):
             xO, yO = (data_obj.xorig, data_obj.yorig)
             xE, yE = ((data_obj.xorig + (data_obj.xcell * data_obj.cols)),
               (data_obj.yorig + (data_obj.ycell * data_obj.rows)))
+        # high resolution but don't draw small lakes (area_thresh)
         self.proj_map = Basemap(projection='lcc', lat_1=data_obj.palp, lat_2=data_obj.pbet, lon_0=data_obj.xcent, 
             lat_0=data_obj.ycent, llcrnrx=xO, llcrnry=yO, urcrnrx=xE, urcrnry=yE, rsphere=(6370000.0, 6370000.0),
-            resolution='h')
+            resolution='h', area_thresh=10000.)
         '''
             lonO, latO = self.proj_trans(data_obj.xorig, data_obj.yorig, inverse=True)
             lonE, latE = self.proj_trans((data_obj.xorig + (data_obj.xcell * data_obj.cols)), 

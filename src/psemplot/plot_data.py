@@ -208,7 +208,8 @@ class DataPlot:
             opts.force_diff):
             # Set up a difference color map when the absolute max and min sit on opposite sides of 0
             print('NOTE: Difference data detected')
-            colors.vmin, colors.vmax = self.define_diff(vmin_lim, vmax_lim, data, opts.no_auto)
+            vmin_lim.x, vmax_lim.x = self.define_diff(vmin_lim, vmax_lim, data, opts.no_auto)
+            colors.vmin, colors.vmax = (vmin_lim.x, vmax_lim.x)
             if not opts.ncolor:
                 self.ncolor = 0.82
             self.cmap, self.ticks = colors.diff_cmap(self.ncolor, opts)
